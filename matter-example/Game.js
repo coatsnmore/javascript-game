@@ -17,7 +17,7 @@ export class Game {
             }
         });
         this.world = this.engine.world;
-        this.player = new Player();
+        this.player = new Player(this.engine);
         this.controls = new Controls(this.engine, this.player);
 
         Matter.Events.on(this.engine, "beforeUpdate", event => {
@@ -31,9 +31,14 @@ export class Game {
             var bElm = document.getElementById(event.pairs[0].bodyB.elementId);
 
             event.pairs.forEach(pair => {
-                console.log(`collision between: ${pair.bodyA} and ${pair.bodyB}`);
+                console.log(`collision between: ${pair.bodyA.label} and ${pair.bodyB.label}`);
                 // if (pair.bodyA.id === this.player.body.id || pair.bodyB.id === this.player.body.id) {
                 //     this.player.canJump = true;
+                // }
+                // console.log(`this.engine.world: ${this.engine.world}`);
+                // if (pair.bodyA.label === 'bullet' || pair.bodyB.label === 'bullet') {
+                //     console.log(`bullet time bitch`);
+                //     Matter.Composite.remove(this.engine.world, [pair.bodyA])
                 // }
             });
         });

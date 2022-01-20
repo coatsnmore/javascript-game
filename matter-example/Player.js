@@ -2,20 +2,31 @@ import * as Matter from 'matter-js';
 
 export class Player {
 
-    constructor() {
+    constructor(engine) {
+        this.engine = engine;
+
+        // jump
         this.canJump = true;
         this.jumpRate = 1;
 
+        // hover
         this.canHover = true;
         this.hoverRate = 1;
         this.hoverFuel = 50;
         this.hoverFuelCapacity = 100;
         this.hovering = false;
 
+        // fire
+        this.fireRate = 1;
+        this.canFire = true;
+
+        // graphics
         this.fillStyle = 'black';
         this.strokeStyle = 'white';
+        this.radius = 50;
 
-        this.body = Matter.Bodies.circle(800, 0, 50, {
+        // physics
+        this.body = Matter.Bodies.circle(800, 0, this.radius, {
             inertia: Infinity,
             friction: 0.1,
             label: 'player',
@@ -56,14 +67,6 @@ export class Player {
             y: this.body.position.y
         }, { x: 0.02, y: 0 })
     }
-    fire() {
-        // this.bullets.okayToFire = false;
-        // let restartFire = function () {
-        //     this.bullets.okayToFire = true;
-        //     // console.log('itso kay to fire again');
-        // }.bind(this);
-        // setTimeout(restartFire, this.bullets.rate * 1000);
-    }
     jump() {
         if (this.canJump) {
             Matter.Body.applyForce(this.body, {
@@ -78,6 +81,32 @@ export class Player {
             setTimeout(restartTimer, this.jumpRate * 1000);
         }
     }
+    fire() {
+        if (this.canFire) {
+            Matter.Composite.add(
+                this.engine.world, [this.createBullet()]
+            );
+            this.canFire = false;
+            let restartTimer = function () {
+                this.canFire = true;
+            }.bind(this);
+            setTimeout(restartTimer, this.fireRate * 1000);
+        }
+
+    }
+    createBullet() {
+        let bullet = Matter.Bodies.circle(this.body.position.x, this.body.position.y + this.radius + 2, 20, {
+            inertia: Infinity,
+            friction: 0.1,
+            label: 'bullet',
+            render: {
+                fillStyle: 'black',
+                strokeStyle: 'black',
+                wireframes: false
+            }
+        });
+        return bullet;
+    }
     update() {
         if (this.hoverFuel < this.hoverFuelCapacity) {
             this.hoverFuel++;
@@ -91,6 +120,6 @@ export class Player {
             this.body.render.strokeStyle = 'black';
         }
 
-        console.log(`this.hoverFuel: ${this.hoverFuel}`);
+        // console.log(`this.hoverFuel: ${this.hoverFuel}`);
     }
 }

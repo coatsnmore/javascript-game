@@ -18,7 +18,8 @@ export class Controls {
                 this.player.down()
             },
             Space: () => {
-                this.player.jump();
+                // this.player.jump();
+                this.player.fire();
             }
         };
 
