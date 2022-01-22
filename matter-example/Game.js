@@ -23,6 +23,7 @@ export class Game {
         Matter.Events.on(this.engine, "beforeUpdate", event => {
             this.controls.handle();
             this.player.update();
+            this.updateBodies();
         });
 
         Matter.Events.on(this.engine, 'collisionStart', function (event) {
@@ -32,16 +33,34 @@ export class Game {
 
             event.pairs.forEach(pair => {
                 console.log(`collision between: ${pair.bodyA.label} and ${pair.bodyB.label}`);
+                // console.log(`this: ${this}`);
                 // if (pair.bodyA.id === this.player.body.id || pair.bodyB.id === this.player.body.id) {
                 //     this.player.canJump = true;
                 // }
-                // console.log(`this.engine.world: ${this.engine.world}`);
-                // if (pair.bodyA.label === 'bullet' || pair.bodyB.label === 'bullet') {
-                //     console.log(`bullet time bitch`);
-                //     Matter.Composite.remove(this.engine.world, [pair.bodyA])
-                // }
+                // console.log(`this.world: ${this.engine.world}`);
+
+                let isKillable = (body) => {
+                    if (body.label === 'bullet' || body.label === 'enemy') {
+                        return true;
+                    }
+                    return false;
+                };
+
+                let kill = (body) => {
+                    Matter.Composite.remove(this.world, [body])
+                }
+                if (pair.bodyA.label === 'bullet' && isKillable(pair.bodyB)) {
+                    kill(pair.bodyA);
+                    kill(pair.bodyB);
+                } else if (pair.bodyB.label === 'bullet' && isKillable(pair.bodyA)) {
+                    kill(pair.bodyA);
+                    kill(pair.bodyB);
+                }
             });
+
         });
+
+
 
         Matter.Composite.add(
             this.engine.world, this.createBoundaries()
@@ -61,18 +80,26 @@ export class Game {
         // this.mouseControl();
     }
 
+    updateBodies() {
+        this.bodies.forEach(body => {
+            // body.position.x += 0.1;
+        });
+    }
+
     createBodies() {
         let bodies = [];
         for (var i = 0; i < 50; i++) {
             bodies.push(this.createBody());
         }
+        this.bodies = bodies;
         return bodies;
     }
 
     createBody() {
         let body = Matter.Bodies.circle(800, 0, 50, {
             // inertia: Infinity,
-            friction: 0.1
+            friction: 0.1,
+            label: 'enemy'
         });
         return body;
     };
