@@ -1,9 +1,11 @@
 import * as Matter from 'matter-js';
+import { AudioPlayer } from '../audio/AudioPlayer';
 
 export class Player {
 
     constructor(engine) {
         this.engine = engine;
+        this.audio = new AudioPlayer();
 
         // jump
         this.canJump = true;
@@ -91,6 +93,7 @@ export class Player {
                 this.canFire = true;
             }.bind(this);
             setTimeout(restartTimer, this.fireRate * 1000);
+            this.audio.playBulletFire();
         }
 
     }
@@ -118,6 +121,7 @@ export class Player {
         } else {
             this.body.render.fillStyle = 'white';
             this.body.render.strokeStyle = 'black';
+            this.audio.playFuelEmpty();
         }
 
         // console.log(`this.hoverFuel: ${this.hoverFuel}`);

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "matter-js": "^0.18.0",
-    "pixi.js": "^6.2.1"
+    "pixi.js": "^6.2.1",
+    "tone": "^14.7.77"
   }
 }

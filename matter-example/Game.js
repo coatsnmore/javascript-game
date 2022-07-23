@@ -1,4 +1,5 @@
 import * as Matter from 'matter-js';
+import { AudioPlayer } from '../audio/AudioPlayer';
 import { Controls } from './Controls';
 import { Player } from './Player'
 
@@ -19,6 +20,8 @@ export class Game {
         this.world = this.engine.world;
         this.player = new Player(this.engine);
         this.controls = new Controls(this.engine, this.player);
+        this.audio = new AudioPlayer();
+
 
         Matter.Events.on(this.engine, "beforeUpdate", event => {
             this.controls.handle();
@@ -26,7 +29,7 @@ export class Game {
             this.updateBodies();
         });
 
-        Matter.Events.on(this.engine, 'collisionStart', function (event) {
+        Matter.Events.on(this.engine, 'collisionStart', event => {
             // We know there was a collision so fetch involved elements ...
             var aElm = document.getElementById(event.pairs[0].bodyA.elementId);
             var bElm = document.getElementById(event.pairs[0].bodyB.elementId);
@@ -47,7 +50,9 @@ export class Game {
                 };
 
                 let kill = (body) => {
-                    Matter.Composite.remove(this.world, [body])
+                    console.log(`killing.. ${body.elementId}`);
+                    Matter.Composite.remove(this.world, [body]);
+                    this.audio.playKill();
                 }
                 if (pair.bodyA.label === 'bullet' && isKillable(pair.bodyB)) {
                     kill(pair.bodyA);
