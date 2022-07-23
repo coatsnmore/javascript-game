@@ -11,6 +11,20 @@
 <body>
   <div id="scene"></div>
   <div id="game"></div>
+
+  <form id="music-controls" class="music-controls">
+    <label>BPM
+      <input id="bpm-range" type="range" min="20" max="80" value="50">
+    </label>
+    <label>Filter
+      <input id="filter-range" type="range" min="0" max="2200" value="800" step="1">
+    </label>
+    <label>Swing
+      <input id="swing-range" type="range" min="0" max="1" value="0">
+    </label>
+    <input id="play-btn" type="button" value="play">
+  </form>
+
   <script type="module" src="/main.js"></script>
 </body>
 
