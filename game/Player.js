@@ -8,8 +8,8 @@ export class Player {
         this.graphics(x, y);
         this.body(x, y);
         this.world = world;
-        this.speed = 100;
-        this.turnSpeed = 2;
+        this.speed = 20;
+        this.turnSpeed = 0.5;
         this.bullets = {
             collection: [],
             speed: 50,
