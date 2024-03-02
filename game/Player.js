@@ -6,7 +6,7 @@ export class Player {
         this.world = world;
         this.size = size;
         this.graphics(x, y);
-        // this.body(x, y);
+        this.body(x, y);
         this.world = world;
         this.speed = 100;
         this.turnSpeed = 2;

@@ -33,7 +33,7 @@ export class Scene {
         this.stage = new PIXI.Container();
 
         // create world and add physics
-        // this.world = new World(60);
+        this.world = new World(60);
 
         // add new player to stage
         this.player = new Player(50, 300, 400, this.world);
@@ -46,19 +46,19 @@ export class Scene {
         this.enemies = [];
 
         // add new enemy to stage
-        // this.enemy = new Enemy(50, 200, 100, this.world);
-        // this.stage.addChild(this.enemy.graphics);
-        // this.enemies.push(this.enemy);
+        this.enemy = new Enemy(50, 200, 100, this.world);
+        this.stage.addChild(this.enemy.graphics);
+        this.enemies.push(this.enemy);
 
         // // add second enemy to stage
-        // this.enemy2 = new Enemy(50, 500, 200, this.world);
-        // this.stage.addChild(this.enemy2.graphics);
-        // this.enemies.push(this.enemy2);
+        this.enemy2 = new Enemy(50, 500, 200, this.world);
+        this.stage.addChild(this.enemy2.graphics);
+        this.enemies.push(this.enemy2);
 
         // // add new bodies to world
-        // this.world.addBody(this.player.body);
-        // this.world.addBody(this.enemy.body);
-        // this.world.addBody(this.enemy2.body);
+        this.world.addBody(this.player.body);
+        this.world.addBody(this.enemy.body);
+        this.world.addBody(this.enemy2.body);
 
         this.paused = false;
         this.tick();
@@ -79,7 +79,7 @@ export class Scene {
         }
 
         // step physics
-        // this.world.update();
+        this.world.update();
 
         // update positions of objects in scene
         let playerOkay = this.player.update(this.controls.getState(), this.width, this.height, this.stage, this.world);
@@ -96,10 +96,10 @@ export class Scene {
         this.enemies.forEach((enemy) => enemy.fire(this.stage, this.world));
 
         // // update HUD
-        // this.hud.update();
+        this.hud.update();
 
         // clear collisions
-        // this.world.clearCollisions();
+        this.world.clearCollisions();
     }
 
 }
