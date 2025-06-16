@@ -23,6 +23,18 @@ export class World {
         this.world = new p2.World({
             gravity: [0, 0]
         });
+        this.bodies = {
+            player: 0,
+            playerBullets: [],
+            enemies: [],
+            enemyBullets: [],
+            collisions: {
+                player: null,
+                playerBullets: [],
+                enemies: [],
+                enemyBullets: [],
+            }
+        };
         this.detectCollisions();
     }
 
@@ -39,57 +51,66 @@ export class World {
         };
     }
 
-    private detectCollisions(): void {
-        this.bodies = {
-            player: 1,
-            playerBullets: [],
-            enemies: [],
-            enemyBullets: [],
-            collisions: {
-                player: null,
-                playerBullets: [],
-                enemies: [],
-                enemyBullets: [],
-            }
-        };
+    addBody(body: p2.Body): void {
+        this.world.addBody(body);
+    }
 
+    removeBody(body: p2.Body): void {
+        // Remove from physics world
+        this.world.removeBody(body);
+
+        // Remove from tracking arrays
+        if (body.id === this.bodies.player) {
+            this.bodies.player = 0;
+        } else if (this.bodies.playerBullets.includes(body.id)) {
+            this.bodies.playerBullets = this.bodies.playerBullets.filter(id => id !== body.id);
+        } else if (this.bodies.enemies.includes(body.id)) {
+            this.bodies.enemies = this.bodies.enemies.filter(id => id !== body.id);
+        } else if (this.bodies.enemyBullets.includes(body.id)) {
+            this.bodies.enemyBullets = this.bodies.enemyBullets.filter(id => id !== body.id);
+        }
+    }
+
+    private detectCollisions(): void {
         this.world.on('beginContact', (e: p2.BeginContactEvent) => {
-            // if player hit
+            // Check for player collisions
             if (e.bodyA.id === this.bodies.player) {
-                // then got hit by B
-               
-                // enemy bullet hit player
+                // Player got hit by B
                 if (this.bodies.enemyBullets.includes(e.bodyB.id)) {
                     this.bodies.collisions.enemyBullets.push(e.bodyB.id);
                     this.bodies.collisions.player = this.bodies.player;
                 }
-
-                // enemy hit player
                 if (this.bodies.enemies.includes(e.bodyB.id)) {
                     this.bodies.collisions.enemies.push(e.bodyB.id);
                     this.bodies.collisions.player = this.bodies.player;
                 }
-
             } else if (e.bodyB.id === this.bodies.player) {
-                // then got hit by A
-
-                // enemy bullet hit player
+                // Player got hit by A
                 if (this.bodies.enemyBullets.includes(e.bodyA.id)) {
                     this.bodies.collisions.enemyBullets.push(e.bodyA.id);
                     this.bodies.collisions.player = this.bodies.player;
                 }
-
-                // enemy hit player
                 if (this.bodies.enemies.includes(e.bodyA.id)) {
                     this.bodies.collisions.enemies.push(e.bodyA.id);
                     this.bodies.collisions.player = this.bodies.player;
                 }
             }
-        });
-    }
 
-    addBody(body: p2.Body): void {
-        this.world.addBody(body);
+            // Check for enemy collisions with player bullets
+            if (this.bodies.enemies.includes(e.bodyA.id)) {
+                // Enemy A got hit by B
+                if (this.bodies.playerBullets.includes(e.bodyB.id)) {
+                    this.bodies.collisions.enemies.push(e.bodyA.id);
+                    this.bodies.collisions.playerBullets.push(e.bodyB.id);
+                }
+            } else if (this.bodies.enemies.includes(e.bodyB.id)) {
+                // Enemy B got hit by A
+                if (this.bodies.playerBullets.includes(e.bodyA.id)) {
+                    this.bodies.collisions.enemies.push(e.bodyB.id);
+                    this.bodies.collisions.playerBullets.push(e.bodyA.id);
+                }
+            }
+        });
     }
 
     update(): void {

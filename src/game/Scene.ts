@@ -53,39 +53,79 @@ export class Scene {
         this.restart();
     }
 
-    private update(): void {
-        const controls = this.controls.getState();
+    private getRandomSpawnPosition(): { x: number, y: number } {
+        // Randomly choose which edge to spawn from (0: top, 1: right, 2: bottom, 3: left)
+        const edge = Math.floor(Math.random() * 4);
+        const padding = 50; // Keep ships away from the very edge
+        
+        switch (edge) {
+            case 0: // Top edge
+                return {
+                    x: Math.random() * (this.app.screen.width - 2 * padding) + padding,
+                    y: padding
+                };
+            case 1: // Right edge
+                return {
+                    x: this.app.screen.width - padding,
+                    y: Math.random() * (this.app.screen.height - 2 * padding) + padding
+                };
+            case 2: // Bottom edge
+                return {
+                    x: Math.random() * (this.app.screen.width - 2 * padding) + padding,
+                    y: this.app.screen.height - padding
+                };
+            case 3: // Left edge
+                return {
+                    x: padding,
+                    y: Math.random() * (this.app.screen.height - 2 * padding) + padding
+                };
+            default:
+                return { x: 0, y: 0 }; // Should never happen
+        }
+    }
 
-        // If game is paused, only check for restart
+    private update(): void {
         if (this.paused) {
-            if (controls.restart) {
-                this.restart(true);
-            }
             return;
         }
 
-        // step physics
+        // update world
         this.world.update();
 
-        // update positions of objects in scene
-        const playerOkay = this.player.update(controls, this.width, this.height, this.app.stage, this.world);
-
-        // game end conditions
-        if (!playerOkay) {
-            this.restartScreen();
+        // update player
+        const playerAlive = this.player.update(this.controls.getState(), this.app.screen.width, this.app.screen.height, this.app.stage, this.world);
+        if (!playerAlive) {
+            this.paused = true;
+            this.hud.restart(this.restart.bind(this));
             return;
         }
 
         // update enemies
-        this.enemies.forEach((enemy) => enemy.update(controls, this.width, this.height, this.app.stage, this.world, this.player));
-
-        // start all enemies firing
-        this.enemies.forEach((enemy) => enemy.fire(this.app.stage, this.world));
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+            const enemy = this.enemies[i];
+            const enemyAlive = enemy.update(this.controls.getState(), this.app.screen.width, this.app.screen.height, this.app.stage, this.world, this.player);
+            
+            if (!enemyAlive) {
+                // Remove enemy from stage and world
+                this.app.stage.removeChild(enemy.getGraphics());
+                this.world.removeBody(enemy.body);
+                this.enemies.splice(i, 1);
+                
+                // Create a new enemy after a short delay
+                setTimeout(() => {
+                    const spawnPos = this.getRandomSpawnPosition();
+                    const newEnemy = new Enemy(50, spawnPos.x, spawnPos.y, this.world);
+                    this.app.stage.addChild(newEnemy.getGraphics());
+                    this.world.addBody(newEnemy.body);
+                    this.enemies.push(newEnemy);
+                }, 3000);
+            }
+        }
 
         // update HUD
         this.hud.update();
 
-        // clear collisions
+        // Clear collisions after processing
         this.world.clearCollisions();
     }
 
@@ -115,12 +155,12 @@ export class Scene {
 
         // add new enemy to stage
         const enemy = new Enemy(50, 200, 100, this.world);
-        this.app.stage.addChild(enemy.graphics);
+        this.app.stage.addChild(enemy.getGraphics());
         this.enemies.push(enemy);
 
         // add second enemy to stage
         const enemy2 = new Enemy(50, 500, 200, this.world);
-        this.app.stage.addChild(enemy2.graphics);
+        this.app.stage.addChild(enemy2.getGraphics());
         this.enemies.push(enemy2);
 
         // add new bodies to world

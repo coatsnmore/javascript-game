@@ -31,6 +31,7 @@ export class Enemy {
     private size: number;
     private speed: number;
     private turnSpeed: number;
+    private health: number;
     private graphics: PIXI.Container;
     private hull!: PIXI.Graphics;
     private engine!: PIXI.Graphics;
@@ -45,6 +46,7 @@ export class Enemy {
         this.size = size;
         this.speed = 100;
         this.turnSpeed = 1;
+        this.health = 25; // Half of player's health
         this.bullets = {
             collection: [],
             speed: 50,
@@ -125,7 +127,33 @@ export class Enemy {
         return body;
     }
 
-    update(controls: ControlState, sceneWidth: number, sceneHeight: number, stage: PIXI.Container, world: World, player: Player): void {
+    private cleanupBullets(stage: PIXI.Container, world: World): void {
+        // Remove all bullets from stage and world
+        for (let j = this.bullets.collection.length - 1; j >= 0; j--) {
+            const bullet = this.bullets.collection[j];
+            if (bullet.graphics.parent) {
+                bullet.graphics.parent.removeChild(bullet.graphics);
+            }
+            world.removeBody(bullet.body);
+        }
+        this.bullets.collection = [];
+    }
+
+    update(controls: ControlState, sceneWidth: number, sceneHeight: number, stage: PIXI.Container, world: World, player: Player): boolean {
+        // Handle player bullet hits
+        if (world.getBodies().collisions.enemies.includes(this.body.id)) {
+            this.health -= 10; // Same damage as player takes
+            console.log(`Enemy health: ${this.health}`);
+            
+            // Check if enemy is destroyed
+            if (this.health <= 0) {
+                console.log('Enemy destroyed!');
+                // Clean up all bullets before returning
+                this.cleanupBullets(stage, world);
+                return false;
+            }
+        }
+
         // control enemy fire
         if (this.bullets.okayToFire) {
             this.fire(stage, world);
@@ -149,17 +177,30 @@ export class Enemy {
         this.graphics.y = this.body.position[1];
         this.graphics.rotation = this.body.angle;
 
-        // update bullets
-        this.bullets.collection.forEach(bullet => {
-            // hit, then die
-            if (world.getBodies().collisions.enemyBullets.includes(bullet.body.id)) {
-                bullet.graphics.alpha = 0;
+        // update bullets and remove collided bullets
+        for (let j = this.bullets.collection.length - 1; j >= 0; j--) {
+            const bullet = this.bullets.collection[j];
+            const collisions = world.getBodies().collisions;
+            
+            // Check if bullet hit something (player or other enemy bullets)
+            if (collisions.enemyBullets.includes(bullet.body.id) || 
+                (collisions.player !== null && collisions.player === bullet.body.id)) {
+                console.log('Enemy bullet hit something, removing...');
+                // Remove bullet from stage and world
+                if (bullet.graphics.parent) {
+                    bullet.graphics.parent.removeChild(bullet.graphics);
+                }
+                world.removeBody(bullet.body);
+                this.bullets.collection.splice(j, 1);
+                continue;
             }
 
-            // update graphics
+            // Update bullet position
             bullet.graphics.x = bullet.body.position[0];
             bullet.graphics.y = bullet.body.position[1];
-        });
+        }
+
+        return true;
     }
 
     private warp(sceneWidth: number, sceneHeight: number): void {
@@ -183,7 +224,7 @@ export class Enemy {
             return;
         }
 
-        const magnitude = this.speed * 1.5;
+        const magnitude = this.bullets.speed;
         const angle = this.body.angle - Math.PI / 2;
 
         const bullet: Bullet = {
@@ -196,35 +237,42 @@ export class Enemy {
             active: false
         };
 
-        this.world.getBodies().enemyBullets.push(bullet.body.id);
+        // Register bullet with world
+        world.getBodies().enemyBullets.push(bullet.body.id);
 
-        // adjust physics
-        bullet.body.velocity[0] += magnitude * Math.cos(angle) + this.body.velocity[0];
-        bullet.body.velocity[1] += magnitude * Math.sin(angle) + this.body.velocity[1];
-        bullet.body.position[0] = (this.size / 2) * Math.cos(angle) + this.body.position[0];
-        bullet.body.position[1] = (this.size / 2) * Math.sin(angle) + this.body.position[1];
-
-        // Create bullet shape
-        const bulletShape = new p2.Circle({
-            radius: this.bullets.size
-        });
-        bullet.body.addShape(bulletShape);
-        world.addBody(bullet.body);
-
-        // graphics
-        bullet.graphics.beginFill(0xFFFFFF);
-        bullet.graphics.lineStyle(1, 0xFF0000);
-        bullet.graphics.drawRect(0, 0, this.bullets.size, this.bullets.size);
+        // Create bullet graphics
+        bullet.graphics.beginFill(0xFF0000); // Red bullets for enemies
         bullet.graphics.drawCircle(0, 0, this.bullets.size);
         bullet.graphics.endFill();
+
+        // Position bullet at the front of the ship
+        const offset = this.size / 2; // Distance from center to front
+        bullet.body.position[0] = this.body.position[0] + offset * Math.cos(angle);
+        bullet.body.position[1] = this.body.position[1] + offset * Math.sin(angle);
+
+        // Add bullet shape
+        const shape = new p2.Circle({
+            radius: this.bullets.size
+        });
+        bullet.body.addShape(shape);
+
+        // Set bullet velocity (inherit enemy velocity and add bullet speed)
+        bullet.body.velocity[0] = this.body.velocity[0] + magnitude * Math.cos(angle);
+        bullet.body.velocity[1] = this.body.velocity[1] + magnitude * Math.sin(angle);
+
         stage.addChild(bullet.graphics);
+        world.addBody(bullet.body);
 
         this.bullets.collection.push(bullet);
+        bullet.active = true;
 
-        // handle fire rate
         this.bullets.okayToFire = false;
         setTimeout(() => {
             this.bullets.okayToFire = true;
         }, this.bullets.rate * 1000);
+    }
+
+    getGraphics(): PIXI.Container {
+        return this.graphics;
     }
 } 
