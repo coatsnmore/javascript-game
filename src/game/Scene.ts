@@ -47,28 +47,37 @@ export class Scene {
 
         // Set up the game loop
         this.app.ticker.add(() => {
-            if (!this.paused) {
-                this.update();
-            }
+            this.update();
         });
 
         this.restart();
     }
 
     private update(): void {
+        const controls = this.controls.getState();
+
+        // If game is paused, only check for restart
+        if (this.paused) {
+            if (controls.restart) {
+                this.restart(true);
+            }
+            return;
+        }
+
         // step physics
         this.world.update();
 
         // update positions of objects in scene
-        const playerOkay = this.player.update(this.controls.getState(), this.width, this.height, this.app.stage, this.world);
+        const playerOkay = this.player.update(controls, this.width, this.height, this.app.stage, this.world);
 
         // game end conditions
         if (!playerOkay) {
             this.restartScreen();
+            return;
         }
 
         // update enemies
-        this.enemies.forEach((enemy) => enemy.update(this.controls.getState(), this.width, this.height, this.app.stage, this.world, this.player));
+        this.enemies.forEach((enemy) => enemy.update(controls, this.width, this.height, this.app.stage, this.world, this.player));
 
         // start all enemies firing
         this.enemies.forEach((enemy) => enemy.fire(this.app.stage, this.world));
@@ -129,8 +138,6 @@ export class Scene {
 
     tick(): void {
         // This method is now handled by PIXI's ticker
-        if (!this.paused) {
-            this.update();
-        }
+        this.update();
     }
 } 

@@ -4,6 +4,7 @@ interface GamepadState {
     up: boolean;
     down: boolean;
     fire: boolean;
+    restart: boolean;
 }
 
 interface NavigatorWithGamepad extends Navigator {
@@ -37,7 +38,8 @@ export class Gamepad {
             right: false,
             up: false,
             down: false,
-            fire: false
+            fire: false,
+            restart: false
         };
         this.activeGamepadIndex = null;
 
@@ -59,7 +61,8 @@ export class Gamepad {
                     right: false,
                     up: false,
                     down: false,
-                    fire: false
+                    fire: false,
+                    restart: false
                 };
             }
         });
@@ -107,6 +110,12 @@ export class Gamepad {
         
         // Fire button (A button or right trigger)
         this.state.fire = gp.buttons[0].pressed || gp.buttons[7].pressed;
+
+        // Throttle (up button or left trigger)
+        this.state.up = this.state.up || gp.buttons[6].pressed;
+
+        // Any button press will trigger restart
+        this.state.restart = gp.buttons.some(button => button.pressed);
     }
 
     connected(): boolean {
