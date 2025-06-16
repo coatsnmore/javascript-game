@@ -108,7 +108,7 @@ export class Scene {
         this.app.stage.addChild(this.player.getGraphics());
 
         // create HUD
-        this.hud = new HUD(50, 25, 250, this.world, this.player);
+        this.hud = new HUD(50, 25, 250, this.world, this.player, this.app);
         this.app.stage.addChild(this.hud.graphics);
 
         this.enemies = [];
