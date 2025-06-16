@@ -1,0 +1,17 @@
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #000;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+} 
