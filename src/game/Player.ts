@@ -37,24 +37,54 @@ export class Player {
     private body: p2.Body;
     private shape!: p2.Box;
     private bullets: BulletConfig;
+    private sceneWidth: number;
+    private sceneHeight: number;
+    private score: number;
+    private rotationSpeed: number;
+    private lastHitTime: number;
+    private hitCooldown: number;
 
-    constructor(size: number, x: number, y: number, world: World) {
-        this.world = world;
-        this.size = size;
-        this.speed = 20;
-        this.turnSpeed = 0.5;
-        this.health = 50;
+    constructor(x: number, y: number, sceneWidth: number, sceneHeight: number) {
+        this.sceneWidth = sceneWidth;
+        this.sceneHeight = sceneHeight;
+        this.health = 100;
+        this.score = 0;
+        this.size = 30;
+        this.speed = 200;
+        this.rotationSpeed = 3;
+        this.lastHitTime = 0;
+        this.hitCooldown = 1000; // 1 second cooldown between hits
+
+        // Create player body
+        this.body = new p2.Body({
+            mass: 1,
+            damping: 0.5,
+            angularDamping: 0.5
+        });
+        this.body.position[0] = x;
+        this.body.position[1] = y;
+
+        // Create player shape
+        const shape = new p2.Box({
+            width: this.size,
+            height: this.size
+        });
+        this.body.addShape(shape);
+
+        // Create player graphics
+        this.graphics = new PIXI.Graphics();
+        this.graphics.beginFill(0x00FF00);
+        this.graphics.drawRect(-this.size / 2, -this.size / 2, this.size, this.size);
+        this.graphics.endFill();
+
+        // Initialize bullets
         this.bullets = {
             collection: [],
-            speed: 50,
-            max: 1,
+            speed: 400,
             size: 5,
-            rate: 1, // second(s)
+            rate: 0.2,
             okayToFire: true
         };
-
-        this.graphics = this.createGraphics(x, y);
-        this.body = this.createBody(x, y);
     }
 
     getHealth(): number {
@@ -119,61 +149,60 @@ export class Player {
     }
 
     update(controls: ControlState, sceneWidth: number, sceneHeight: number, stage: PIXI.Container, world: World): boolean {
-        // handle player hit
-        if (world.getBodies().collisions.player) {
-            // Only take damage once per frame, regardless of number of collisions
-            this.health -= 10;
-            console.error(`player health: ${this.health}!!`);
-            // Clear collisions after taking damage
-            world.clearCollisions();
+        const collisions = world.getBodies().collisions;
+        console.log('Player collisions:', collisions);
+        
+        // Handle enemy bullet hits
+        if (collisions.player === this.body.id && collisions.enemyBullets.length > 0) {
+            const currentTime = Date.now();
+            if (currentTime - this.lastHitTime > this.hitCooldown) {
+                this.health -= 10; // Take damage from enemy bullets
+                this.lastHitTime = currentTime;
+                console.log(`Player health: ${this.health}`);
+            }
         }
 
-        // test player death
-        if (this.health <= 0) {
-            console.error(`player died!!!`);
-            return false;
-        }
-
-        // handle player fire
-        if (controls.fire) {
+        // control player fire
+        if (controls.fire && this.bullets.okayToFire) {
             this.fire(stage, world);
         }
 
-        // player angles
-        if (controls.left) {
-            this.body.angularVelocity = -1 * this.turnSpeed;
-        } else if (controls.right) {
-            this.body.angularVelocity = this.turnSpeed;
-        } else {
-            this.body.angularVelocity = 0;
-        }
-
-        // velocity
+        // control player movement
         if (controls.up) {
-            const angle = this.body.angle + Math.PI / 2;
-            this.body.force[0] -= this.speed * Math.cos(angle);
-            this.body.force[1] -= this.speed * Math.sin(angle);
-            this.engine.alpha = 1;
-        } else {
-            this.engine.alpha = 0;
+            const angle = this.body.angle - Math.PI / 2;
+            this.body.force[0] = Math.cos(angle) * this.speed;
+            this.body.force[1] = Math.sin(angle) * this.speed;
+        }
+        if (controls.down) {
+            const angle = this.body.angle - Math.PI / 2;
+            this.body.force[0] = -Math.cos(angle) * this.speed;
+            this.body.force[1] = -Math.sin(angle) * this.speed;
+        }
+        if (controls.left) {
+            this.body.angularVelocity = -this.rotationSpeed;
+        }
+        if (controls.right) {
+            this.body.angularVelocity = this.rotationSpeed;
         }
 
-        // warp player on boundaries
+        // warp on boundaries
         this.warp(sceneWidth, sceneHeight);
 
-        // update player graphics
+        // update graphics
         this.graphics.x = this.body.position[0];
         this.graphics.y = this.body.position[1];
         this.graphics.rotation = this.body.angle;
 
-        // update bullets graphics and remove collided bullets
+        // update bullets and remove collided bullets
         for (let j = this.bullets.collection.length - 1; j >= 0; j--) {
             const bullet = this.bullets.collection[j];
             
-            // Check if bullet hit something
-            if (world.getBodies().collisions.playerBullets.includes(bullet.body.id)) {
+            // Check if bullet hit anything
+            if (collisions.playerBullets.includes(bullet.body.id)) {
                 // Remove bullet from stage and world
-                stage.removeChild(bullet.graphics);
+                if (bullet.graphics.parent) {
+                    bullet.graphics.parent.removeChild(bullet.graphics);
+                }
                 world.removeBody(bullet.body);
                 this.bullets.collection.splice(j, 1);
                 continue;
@@ -184,7 +213,7 @@ export class Player {
             bullet.graphics.y = bullet.body.position[1];
         }
 
-        return true;
+        return this.health > 0;
     }
 
     getGraphics(): PIXI.Container {
@@ -226,7 +255,8 @@ export class Player {
         };
 
         // Register bullet with world
-        world.getBodies().playerBullets.push(bullet.body.id);
+        world.addBody(bullet.body, 'playerBullet');
+        console.log('Fired player bullet:', bullet.body.id);
 
         // Create bullet graphics
         bullet.graphics.beginFill(0xFFFFFF);
@@ -249,7 +279,7 @@ export class Player {
         bullet.body.velocity[1] = this.body.velocity[1] + magnitude * Math.sin(angle);
 
         stage.addChild(bullet.graphics);
-        world.addBody(bullet.body);
+        world.addBody(bullet.body, 'playerBullet');
 
         this.bullets.collection.push(bullet);
         bullet.active = true;

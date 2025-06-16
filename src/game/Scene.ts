@@ -89,44 +89,49 @@ export class Scene {
             return;
         }
 
-        // update world
-        this.world.update();
+        // Get current control state
+        const controlState = this.controls.getState();
 
-        // update player
-        const playerAlive = this.player.update(this.controls.getState(), this.app.screen.width, this.app.screen.height, this.app.stage, this.world);
-        if (!playerAlive) {
-            this.paused = true;
-            this.hud.restart(this.restart.bind(this));
-            return;
-        }
+        // Update player
+        const playerAlive = this.player.update(controlState, this.app.screen.width, this.app.screen.height, this.app.stage, this.world);
 
-        // update enemies
+        // Update enemies
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
-            const enemyAlive = enemy.update(this.controls.getState(), this.app.screen.width, this.app.screen.height, this.app.stage, this.world, this.player);
-            
+            const enemyAlive = enemy.update(controlState, this.app.screen.width, this.app.screen.height, this.app.stage, this.world, this.player);
+
             if (!enemyAlive) {
-                // Remove enemy from stage and world
+                // Remove enemy from stage
                 this.app.stage.removeChild(enemy.getGraphics());
+                // Remove enemy from world
                 this.world.removeBody(enemy.body);
+                // Remove enemy from array
                 this.enemies.splice(i, 1);
-                
-                // Create a new enemy after a short delay
+                // Spawn new enemy after delay
                 setTimeout(() => {
                     const spawnPos = this.getRandomSpawnPosition();
-                    const newEnemy = new Enemy(50, spawnPos.x, spawnPos.y, this.world);
+                    const newEnemy = new Enemy(spawnPos.x, spawnPos.y, this.app.screen.width, this.app.screen.height);
+                    this.enemies.push(newEnemy);
                     this.app.stage.addChild(newEnemy.getGraphics());
                     this.world.addBody(newEnemy.body);
-                    this.enemies.push(newEnemy);
                 }, 3000);
             }
         }
 
-        // update HUD
+        // Update world
+        this.world.update();
+        
+        // Detect collisions
+        this.world.detectCollisions();
+
+        // Update HUD
         this.hud.update();
 
-        // Clear collisions after processing
-        this.world.clearCollisions();
+        // Check if player is dead
+        if (!playerAlive) {
+            this.paused = true;
+            this.hud.showGameOver();
+        }
     }
 
     restart(unpause?: boolean): void {

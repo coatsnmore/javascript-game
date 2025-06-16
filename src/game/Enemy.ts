@@ -140,8 +140,11 @@ export class Enemy {
     }
 
     update(controls: ControlState, sceneWidth: number, sceneHeight: number, stage: PIXI.Container, world: World, player: Player): boolean {
+        const collisions = world.getBodies().collisions;
+        console.log('Enemy collisions:', collisions);
+        
         // Handle player bullet hits
-        if (world.getBodies().collisions.enemies.includes(this.body.id)) {
+        if (collisions.enemies.includes(this.body.id)) {
             this.health -= 10; // Same damage as player takes
             console.log(`Enemy health: ${this.health}`);
             
@@ -180,11 +183,12 @@ export class Enemy {
         // update bullets and remove collided bullets
         for (let j = this.bullets.collection.length - 1; j >= 0; j--) {
             const bullet = this.bullets.collection[j];
-            const collisions = world.getBodies().collisions;
+            console.log('Checking enemy bullet:', bullet.body.id, 'against collisions:', collisions);
             
-            // Check if bullet hit something (player or other enemy bullets)
+            // Check if bullet hit anything (player, other bullets, or enemies)
             if (collisions.enemyBullets.includes(bullet.body.id) || 
-                (collisions.player !== null && collisions.player === bullet.body.id)) {
+                (collisions.player !== null && collisions.player === bullet.body.id) ||
+                collisions.enemies.includes(bullet.body.id)) {
                 console.log('Enemy bullet hit something, removing...');
                 // Remove bullet from stage and world
                 if (bullet.graphics.parent) {
@@ -238,7 +242,8 @@ export class Enemy {
         };
 
         // Register bullet with world
-        world.getBodies().enemyBullets.push(bullet.body.id);
+        world.addBody(bullet.body, 'enemyBullet');
+        console.log('Fired enemy bullet:', bullet.body.id);
 
         // Create bullet graphics
         bullet.graphics.beginFill(0xFF0000); // Red bullets for enemies
@@ -261,7 +266,7 @@ export class Enemy {
         bullet.body.velocity[1] = this.body.velocity[1] + magnitude * Math.sin(angle);
 
         stage.addChild(bullet.graphics);
-        world.addBody(bullet.body);
+        world.addBody(bullet.body, 'enemyBullet');
 
         this.bullets.collection.push(bullet);
         bullet.active = true;
