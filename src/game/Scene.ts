@@ -92,15 +92,7 @@ export class Scene {
         // update world
         this.world.update();
 
-        // update player
-        const playerAlive = this.player.update(this.controls.getState(), this.app.screen.width, this.app.screen.height, this.app.stage, this.world);
-        if (!playerAlive) {
-            this.paused = true;
-            this.hud.restart(this.restart.bind(this));
-            return;
-        }
-
-        // update enemies
+        // Process collisions for all enemies before updating
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
             const enemyAlive = enemy.update(this.controls.getState(), this.app.screen.width, this.app.screen.height, this.app.stage, this.world, this.player);
@@ -122,10 +114,18 @@ export class Scene {
             }
         }
 
+        // update player
+        const playerAlive = this.player.update(this.controls.getState(), this.app.screen.width, this.app.screen.height, this.app.stage, this.world);
+        if (!playerAlive) {
+            this.paused = true;
+            this.hud.restart(this.restart.bind(this));
+            return;
+        }
+
         // update HUD
         this.hud.update();
 
-        // Clear collisions after processing
+        // Clear collisions after all processing is complete
         this.world.clearCollisions();
     }
 

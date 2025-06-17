@@ -177,6 +177,10 @@ export class Enemy {
         this.graphics.y = this.body.position[1];
         this.graphics.rotation = this.body.angle;
 
+        // Debug: Log current collisions
+        console.log('Current collisions:', world.getBodies().collisions.enemyBullets);
+        console.log('Current bullets:', this.bullets.collection.map(b => b.body.id));
+
         // update bullets and remove collided bullets
         for (let j = this.bullets.collection.length - 1; j >= 0; j--) {
             const bullet = this.bullets.collection[j];
@@ -185,13 +189,12 @@ export class Enemy {
             // Check if bullet hit something (player or other enemy bullets)
             if (collisions.enemyBullets.includes(bullet.body.id) || 
                 (collisions.player !== null && collisions.player === bullet.body.id)) {
-                console.log('Enemy bullet hit something, removing...');
+                console.log('Removing bullet:', bullet.body.id);
                 // Remove bullet from stage and world
-                if (bullet.graphics.parent) {
-                    bullet.graphics.parent.removeChild(bullet.graphics);
-                }
+                stage.removeChild(bullet.graphics);
                 world.removeBody(bullet.body);
                 this.bullets.collection.splice(j, 1);
+                console.log('Bullet removed. Remaining bullets:', this.bullets.collection.length);
                 continue;
             }
 
@@ -237,9 +240,6 @@ export class Enemy {
             active: false
         };
 
-        // Register bullet with world
-        world.getBodies().enemyBullets.push(bullet.body.id);
-
         // Create bullet graphics
         bullet.graphics.beginFill(0xFF0000); // Red bullets for enemies
         bullet.graphics.drawCircle(0, 0, this.bullets.size);
@@ -260,8 +260,12 @@ export class Enemy {
         bullet.body.velocity[0] = this.body.velocity[0] + magnitude * Math.cos(angle);
         bullet.body.velocity[1] = this.body.velocity[1] + magnitude * Math.sin(angle);
 
+        // Add to stage and world first
         stage.addChild(bullet.graphics);
         world.addBody(bullet.body);
+
+        // Register bullet with world after adding to physics world
+        world.getBodies().enemyBullets.push(bullet.body.id);
 
         this.bullets.collection.push(bullet);
         bullet.active = true;

@@ -73,11 +73,16 @@ export class World {
 
     private detectCollisions(): void {
         this.world.on('beginContact', (e: p2.BeginContactEvent) => {
+            console.log('Collision detected between:', e.bodyA.id, 'and', e.bodyB.id);
+            
             // Check for player collisions
             if (e.bodyA.id === this.bodies.player) {
                 // Player got hit by B
                 if (this.bodies.enemyBullets.includes(e.bodyB.id)) {
-                    this.bodies.collisions.enemyBullets.push(e.bodyB.id);
+                    console.log('Player hit by enemy bullet:', e.bodyB.id);
+                    if (!this.bodies.collisions.enemyBullets.includes(e.bodyB.id)) {
+                        this.bodies.collisions.enemyBullets.push(e.bodyB.id);
+                    }
                     this.bodies.collisions.player = this.bodies.player;
                 }
                 if (this.bodies.enemies.includes(e.bodyB.id)) {
@@ -87,7 +92,10 @@ export class World {
             } else if (e.bodyB.id === this.bodies.player) {
                 // Player got hit by A
                 if (this.bodies.enemyBullets.includes(e.bodyA.id)) {
-                    this.bodies.collisions.enemyBullets.push(e.bodyA.id);
+                    console.log('Player hit by enemy bullet:', e.bodyA.id);
+                    if (!this.bodies.collisions.enemyBullets.includes(e.bodyA.id)) {
+                        this.bodies.collisions.enemyBullets.push(e.bodyA.id);
+                    }
                     this.bodies.collisions.player = this.bodies.player;
                 }
                 if (this.bodies.enemies.includes(e.bodyA.id)) {
@@ -110,10 +118,29 @@ export class World {
                     this.bodies.collisions.playerBullets.push(e.bodyA.id);
                 }
             }
+
+            // Check for enemy bullet collisions with other enemy bullets
+            if (this.bodies.enemyBullets.includes(e.bodyA.id) && this.bodies.enemyBullets.includes(e.bodyB.id)) {
+                console.log('Enemy bullet collision between:', e.bodyA.id, 'and', e.bodyB.id);
+                // Only add each bullet ID once
+                if (!this.bodies.collisions.enemyBullets.includes(e.bodyA.id)) {
+                    this.bodies.collisions.enemyBullets.push(e.bodyA.id);
+                }
+                if (!this.bodies.collisions.enemyBullets.includes(e.bodyB.id)) {
+                    this.bodies.collisions.enemyBullets.push(e.bodyB.id);
+                }
+            }
+
+            // Debug: Log current collisions after processing
+            console.log('Current collisions after processing:', this.bodies.collisions);
         });
     }
 
     update(): void {
+        // Debug: Log collisions before world step
+        console.log('Collisions before world step:', this.bodies.collisions);
         this.world.step(1 / this.fps);
+        // Debug: Log collisions after world step
+        console.log('Collisions after world step:', this.bodies.collisions);
     }
 } 
