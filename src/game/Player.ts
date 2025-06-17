@@ -37,13 +37,14 @@ export class Player {
     private body: p2.Body;
     private shape!: p2.Box;
     private bullets: BulletConfig;
+    private readonly MAX_HEALTH: number = 100;
 
     constructor(size: number, x: number, y: number, world: World) {
         this.world = world;
         this.size = size;
         this.speed = 20;
         this.turnSpeed = 0.5;
-        this.health = 50;
+        this.health = this.MAX_HEALTH;
         this.bullets = {
             collection: [],
             speed: 50,
@@ -273,5 +274,9 @@ export class Player {
         } else if (this.body.position[1] > height) {
             this.body.position[1] = height;
         }
+    }
+
+    heal(amount: number): void {
+        this.health = Math.min(this.MAX_HEALTH, this.health + amount);
     }
 } 

@@ -222,4 +222,8 @@ export class World {
     getHealthBar(): HealthBar {
         return this.healthBar;
     }
+
+    getWorld(): p2.World {
+        return this.world;
+    }
 } 

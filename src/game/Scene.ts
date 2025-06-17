@@ -3,7 +3,9 @@ import { Enemy } from './Enemy';
 import { Controls } from './Controls';
 import { World } from './World';
 import { HUD } from './HUD';
+import { Drop } from './Drop';
 import * as PIXI from 'pixi.js';
+import * as p2 from 'p2';
 
 export class Scene {
     private controls: Controls;
@@ -15,6 +17,7 @@ export class Scene {
     private player: Player;
     private hud: HUD;
     private enemies: Enemy[] = [];
+    private drops: Drop[] = [];
 
     constructor(domId: string, width: number, height: number) {
         this.controls = new Controls();
@@ -127,6 +130,11 @@ export class Scene {
                 this.app.stage.removeChild(enemy.getGraphics());
                 this.world.removeBody(enemy.body);
                 this.enemies.splice(i, 1);
+
+                // Always drop a health item
+                const drop = new Drop(enemy.body.position[0], enemy.body.position[1], 'health', 20, this.world);
+                this.app.stage.addChild(drop.getGraphics());
+                this.drops.push(drop);
                 
                 // Create a new enemy after a short delay
                 setTimeout(() => {
@@ -136,6 +144,40 @@ export class Scene {
                     this.world.addBody(newEnemy.body);
                     this.enemies.push(newEnemy);
                 }, 3000);
+            }
+        }
+
+        // Update drops
+        for (let i = this.drops.length - 1; i >= 0; i--) {
+            const drop = this.drops[i];
+            drop.update();
+
+            // Check if drop has expired
+            if (!drop.getGraphics().parent) {
+                this.drops.splice(i, 1);
+                continue;
+            }
+
+            // Check for collision with player
+            const playerBody = this.world.getBodies().player;
+            const dropBody = drop.getBody();
+            const playerBodyObj = this.world.getWorld().bodies.find((b: p2.Body) => b.id === playerBody);
+            if (!playerBodyObj) continue;
+
+            const distance = Math.sqrt(
+                Math.pow(dropBody.position[0] - playerBodyObj.position[0], 2) +
+                Math.pow(dropBody.position[1] - playerBodyObj.position[1], 2)
+            );
+
+            if (distance < 50) { // Increased collision radius for easier collection
+                // Apply health
+                if (drop.getType() === 'health') {
+                    this.player.heal(drop.getValue());
+                }
+                // Remove drop
+                this.app.stage.removeChild(drop.getGraphics());
+                this.world.removeBody(drop.getBody());
+                this.drops.splice(i, 1);
             }
         }
 
@@ -180,6 +222,7 @@ export class Scene {
         this.app.stage.addChild(this.hud.graphics);
 
         this.enemies = [];
+        this.drops = [];
 
         // add new enemy to stage
         const enemy = new Enemy(50, 200, 100, this.world);
@@ -191,10 +234,16 @@ export class Scene {
         this.app.stage.addChild(enemy2.getGraphics());
         this.enemies.push(enemy2);
 
+        // add third enemy to stage
+        const enemy3 = new Enemy(50, 300, 100, this.world);
+        this.app.stage.addChild(enemy3.getGraphics());
+        this.enemies.push(enemy3);
+
         // add new bodies to world
         this.world.addBody(this.player.body);
         this.world.addBody(enemy.body);
         this.world.addBody(enemy2.body);
+        this.world.addBody(enemy3.body);
 
         this.paused = false;
     }

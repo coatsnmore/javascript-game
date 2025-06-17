@@ -35,7 +35,7 @@ export class Enemy {
     private graphics: PIXI.Container;
     private hull!: PIXI.Graphics;
     private engine!: PIXI.Graphics;
-    private body: p2.Body;
+    public body: p2.Body;
     private shape!: p2.Box;
     private bullets: BulletConfig;
     private turnDirection: boolean;
