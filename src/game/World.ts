@@ -1,4 +1,7 @@
 import * as p2 from 'p2';
+import { GameState } from './GameState';
+import { ImpactEffect } from './effects/ImpactEffect';
+import { HealthBar } from './ui/HealthBar';
 
 interface GameBodies {
     player: number;
@@ -17,6 +20,12 @@ export class World {
     private fps: number;
     private world: p2.World;
     private bodies: GameBodies;
+    private gameState: GameState;
+    private lastUpdateTime: number;
+    private impactEffect: ImpactEffect;
+    private healthBar: HealthBar;
+    private playerHealth: number;
+    private readonly MAX_PLAYER_HEALTH: number = 100;
 
     constructor(fps: number = 60) {
         this.fps = fps;
@@ -35,6 +44,11 @@ export class World {
                 enemyBullets: [],
             }
         };
+        this.gameState = new GameState(this);
+        this.lastUpdateTime = Date.now();
+        this.impactEffect = new ImpactEffect();
+        this.playerHealth = this.MAX_PLAYER_HEALTH;
+        this.healthBar = new HealthBar(this.MAX_PLAYER_HEALTH);
         this.detectCollisions();
     }
 
@@ -82,12 +96,28 @@ export class World {
                     console.log('Player hit by enemy bullet:', e.bodyB.id);
                     if (!this.bodies.collisions.enemyBullets.includes(e.bodyB.id)) {
                         this.bodies.collisions.enemyBullets.push(e.bodyB.id);
+                        // Create impact effect at player position
+                        const playerBody = this.world.bodies.find(b => b.id === this.bodies.player);
+                        if (playerBody) {
+                            this.impactEffect.createImpact(playerBody.position[0], playerBody.position[1], 'player');
+                            // Reduce player health
+                            this.playerHealth = Math.max(0, this.playerHealth - 10);
+                            this.healthBar.setHealth(this.playerHealth);
+                        }
                     }
                     this.bodies.collisions.player = this.bodies.player;
                 }
                 if (this.bodies.enemies.includes(e.bodyB.id)) {
                     this.bodies.collisions.enemies.push(e.bodyB.id);
                     this.bodies.collisions.player = this.bodies.player;
+                    // Create impact effect at player position
+                    const playerBody = this.world.bodies.find(b => b.id === this.bodies.player);
+                    if (playerBody) {
+                        this.impactEffect.createImpact(playerBody.position[0], playerBody.position[1], 'player');
+                        // Reduce player health
+                        this.playerHealth = Math.max(0, this.playerHealth - 20);
+                        this.healthBar.setHealth(this.playerHealth);
+                    }
                 }
             } else if (e.bodyB.id === this.bodies.player) {
                 // Player got hit by A
@@ -95,12 +125,28 @@ export class World {
                     console.log('Player hit by enemy bullet:', e.bodyA.id);
                     if (!this.bodies.collisions.enemyBullets.includes(e.bodyA.id)) {
                         this.bodies.collisions.enemyBullets.push(e.bodyA.id);
+                        // Create impact effect at player position
+                        const playerBody = this.world.bodies.find(b => b.id === this.bodies.player);
+                        if (playerBody) {
+                            this.impactEffect.createImpact(playerBody.position[0], playerBody.position[1], 'player');
+                            // Reduce player health
+                            this.playerHealth = Math.max(0, this.playerHealth - 10);
+                            this.healthBar.setHealth(this.playerHealth);
+                        }
                     }
                     this.bodies.collisions.player = this.bodies.player;
                 }
                 if (this.bodies.enemies.includes(e.bodyA.id)) {
                     this.bodies.collisions.enemies.push(e.bodyA.id);
                     this.bodies.collisions.player = this.bodies.player;
+                    // Create impact effect at player position
+                    const playerBody = this.world.bodies.find(b => b.id === this.bodies.player);
+                    if (playerBody) {
+                        this.impactEffect.createImpact(playerBody.position[0], playerBody.position[1], 'player');
+                        // Reduce player health
+                        this.playerHealth = Math.max(0, this.playerHealth - 20);
+                        this.healthBar.setHealth(this.playerHealth);
+                    }
                 }
             }
 
@@ -110,12 +156,26 @@ export class World {
                 if (this.bodies.playerBullets.includes(e.bodyB.id)) {
                     this.bodies.collisions.enemies.push(e.bodyA.id);
                     this.bodies.collisions.playerBullets.push(e.bodyB.id);
+                    // Add coins for enemy death
+                    this.gameState.addCoins(1);
+                    // Create impact effect at enemy position
+                    const enemyBody = this.world.bodies.find(b => b.id === e.bodyA.id);
+                    if (enemyBody) {
+                        this.impactEffect.createImpact(enemyBody.position[0], enemyBody.position[1], 'enemy');
+                    }
                 }
             } else if (this.bodies.enemies.includes(e.bodyB.id)) {
                 // Enemy B got hit by A
                 if (this.bodies.playerBullets.includes(e.bodyA.id)) {
                     this.bodies.collisions.enemies.push(e.bodyB.id);
                     this.bodies.collisions.playerBullets.push(e.bodyA.id);
+                    // Add coins for enemy death
+                    this.gameState.addCoins(1);
+                    // Create impact effect at enemy position
+                    const enemyBody = this.world.bodies.find(b => b.id === e.bodyB.id);
+                    if (enemyBody) {
+                        this.impactEffect.createImpact(enemyBody.position[0], enemyBody.position[1], 'enemy');
+                    }
                 }
             }
 
@@ -137,10 +197,29 @@ export class World {
     }
 
     update(): void {
+        const currentTime = Date.now();
+        const deltaTime = (currentTime - this.lastUpdateTime) / 1000; // Convert to seconds
+        this.lastUpdateTime = currentTime;
+
+        // Update game state
+        this.gameState.update(deltaTime);
+
         // Debug: Log collisions before world step
         console.log('Collisions before world step:', this.bodies.collisions);
         this.world.step(1 / this.fps);
         // Debug: Log collisions after world step
         console.log('Collisions after world step:', this.bodies.collisions);
+    }
+
+    getGameState(): GameState {
+        return this.gameState;
+    }
+
+    getImpactEffect(): ImpactEffect {
+        return this.impactEffect;
+    }
+
+    getHealthBar(): HealthBar {
+        return this.healthBar;
     }
 } 

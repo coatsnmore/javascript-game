@@ -83,10 +83,27 @@ export class HUD {
             strokeThickness: 6
         });
         
-        // Center the text
+        // Create timer text
+        const elapsedTime = this.world.getGameState().getElapsedTime();
+        const minutes = Math.floor(elapsedTime / 60);
+        const seconds = Math.floor(elapsedTime % 60);
+        const timerText = new PIXI.Text(`Time Survived: ${minutes}:${seconds.toString().padStart(2, '0')}`, {
+            fontFamily: 'Arial',
+            fontSize: 36,
+            fill: 0xFFFFFF,
+            align: 'center',
+            stroke: 0x000000,
+            strokeThickness: 4
+        });
+        
+        // Center the texts
         gameOverText.anchor.set(0.5);
         gameOverText.x = this.app.screen.width / 2;
-        gameOverText.y = this.app.screen.height / 2;
+        gameOverText.y = this.app.screen.height / 2 - 50;
+        
+        timerText.anchor.set(0.5);
+        timerText.x = this.app.screen.width / 2;
+        timerText.y = this.app.screen.height / 2 + 50;
         
         // Create flashing outline
         const flashOutline = new PIXI.Graphics();
@@ -98,9 +115,10 @@ export class HUD {
             gameOverText.height + 40
         );
         
-        // Add both to container
+        // Add all to container
         this.gameOverContainer.addChild(flashOutline);
         this.gameOverContainer.addChild(gameOverText);
+        this.gameOverContainer.addChild(timerText);
         
         // Add to stage directly instead of HUD graphics
         this.app.stage.addChild(this.gameOverContainer);
