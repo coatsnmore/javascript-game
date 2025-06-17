@@ -65,6 +65,44 @@ export class HUD {
         this.graphics.addChildAt(this.healthDisplay, 1);
     }
 
+    resize(width: number, height: number): void {
+        // Update health bar background
+        const healthBarBg = this.graphics.children[0] as PIXI.Graphics;
+        healthBarBg.clear();
+        healthBarBg.beginFill(0x333333);
+        healthBarBg.drawRect(0, 0, width, this.HEALTH_HEIGHT);
+        healthBarBg.endFill();
+
+        // Update health bar position
+        this.graphics.y = height - this.HEALTH_HEIGHT;
+
+        // Update health display
+        this.showHealth(this.player.getHealth());
+
+        // Update game over screen if it exists
+        if (this.gameOverContainer) {
+            const gameOverText = this.gameOverContainer.children[1] as PIXI.Text;
+            const timerText = this.gameOverContainer.children[2] as PIXI.Text;
+            const flashOutline = this.gameOverContainer.children[0] as PIXI.Graphics;
+
+            // Update positions
+            gameOverText.x = width / 2;
+            gameOverText.y = height / 2 - 50;
+            timerText.x = width / 2;
+            timerText.y = height / 2 + 50;
+
+            // Update flash outline
+            flashOutline.clear();
+            flashOutline.lineStyle(8, 0xFFFF00);
+            flashOutline.drawRect(
+                gameOverText.x - gameOverText.width / 2 - 20,
+                gameOverText.y - gameOverText.height / 2 - 20,
+                gameOverText.width + 40,
+                gameOverText.height + 40
+            );
+        }
+    }
+
     restart(restartCallBack: (unpause: boolean) => void): void {
         // Clean up any existing game over screen
         this.cleanup();

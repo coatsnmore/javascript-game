@@ -29,7 +29,8 @@ export class Scene {
             backgroundColor: 0x000000,
             antialias: true,
             resolution: window.devicePixelRatio || 1,
-            autoDensity: true
+            autoDensity: true,
+            resizeTo: window // This will make the canvas automatically resize to the window
         });
 
         // attach the scene to the DOM
@@ -51,6 +52,30 @@ export class Scene {
         });
 
         this.restart();
+    }
+
+    // Add resize method
+    resize(width: number, height: number): void {
+        this.width = width;
+        this.height = height;
+        
+        // Update app size
+        this.app.renderer.resize(width, height);
+        
+        // Update HUD position
+        if (this.hud) {
+            this.hud.resize(width, height);
+        }
+        
+        // Update player boundaries
+        if (this.player) {
+            this.player.updateBoundaries(width, height);
+        }
+        
+        // Update enemy boundaries
+        this.enemies.forEach(enemy => {
+            enemy.updateBoundaries(width, height);
+        });
     }
 
     private getRandomSpawnPosition(): { x: number, y: number } {

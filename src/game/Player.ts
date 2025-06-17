@@ -259,4 +259,19 @@ export class Player {
             this.bullets.okayToFire = true;
         }, this.bullets.rate * 1000);
     }
+
+    updateBoundaries(width: number, height: number): void {
+        // Update player position if it's outside the new boundaries
+        if (this.body.position[0] < 0) {
+            this.body.position[0] = 0;
+        } else if (this.body.position[0] > width) {
+            this.body.position[0] = width;
+        }
+
+        if (this.body.position[1] < 0) {
+            this.body.position[1] = 0;
+        } else if (this.body.position[1] > height) {
+            this.body.position[1] = height;
+        }
+    }
 } 
