@@ -10,6 +10,11 @@ export class HUD {
     private graphics: PIXI.Container;
     private healthDisplay: PIXI.Graphics = new PIXI.Graphics();
     private app: PIXI.Application;
+    private gameOverContainer: PIXI.Container | null = null;
+    private flashTimer: number = 0;
+    private flashInterval: number = 0.5; // seconds between flashes
+    private flashVisible: boolean = true;
+    private flashTicker: PIXI.Ticker | null = null;
 
     constructor(size: number, x: number, y: number, world: World, player: Player, app: PIXI.Application) {
         this.world = world;
@@ -61,25 +66,101 @@ export class HUD {
     }
 
     restart(restartCallBack: (unpause: boolean) => void): void {
-        const gameOver = new PIXI.Container();
-        const gameOverText = new PIXI.Text('Game Over!!!', {
+        // Clean up any existing game over screen
+        this.cleanup();
+        
+        // Create game over container
+        this.gameOverContainer = new PIXI.Container();
+        
+        // Create game over text with outline
+        const gameOverText = new PIXI.Text('GAME OVER', {
             fontFamily: 'Arial',
-            fontSize: 24,
-            fill: 0xE34242,
-            align: 'center'
+            fontSize: 72,
+            fontWeight: 'bold',
+            fill: 0xFFFFFF,
+            align: 'center',
+            stroke: 0x000000,
+            strokeThickness: 6
         });
-        gameOver.addChild(gameOverText);
-
-        gameOver.eventMode = 'static';
-        gameOver.cursor = 'pointer';
-        gameOver.on('pointerdown', () => {
-            console.log(`button touched to restart...`);
+        
+        // Center the text
+        gameOverText.anchor.set(0.5);
+        gameOverText.x = this.app.screen.width / 2;
+        gameOverText.y = this.app.screen.height / 2;
+        
+        // Create flashing outline
+        const flashOutline = new PIXI.Graphics();
+        flashOutline.lineStyle(8, 0xFFFF00);
+        flashOutline.drawRect(
+            gameOverText.x - gameOverText.width / 2 - 20,
+            gameOverText.y - gameOverText.height / 2 - 20,
+            gameOverText.width + 40,
+            gameOverText.height + 40
+        );
+        
+        // Add both to container
+        this.gameOverContainer.addChild(flashOutline);
+        this.gameOverContainer.addChild(gameOverText);
+        
+        // Add to stage directly instead of HUD graphics
+        this.app.stage.addChild(this.gameOverContainer);
+        
+        // Set up click handler for the entire screen
+        this.app.stage.eventMode = 'static';
+        this.app.stage.cursor = 'pointer';
+        
+        // Start flashing after 5 seconds
+        setTimeout(() => {
+            this.startFlashing();
+        }, 5000);
+        
+        // Handle restart on any click
+        const clickHandler = () => {
+            this.cleanup();
             restartCallBack(true);
-        });
+        };
+        
+        this.app.stage.on('pointerdown', clickHandler);
+    }
 
-        gameOver.x = this.app.screen.width / 2 - gameOverText.width / 2;
-        gameOver.y = this.app.screen.height / 2 - gameOverText.height / 2;
-        this.graphics.addChild(gameOver);
+    private startFlashing(): void {
+        if (!this.gameOverContainer) return;
+        
+        // Get the flash outline (first child)
+        const flashOutline = this.gameOverContainer.children[0] as PIXI.Graphics;
+        
+        // Create a new ticker for flashing
+        this.flashTicker = new PIXI.Ticker();
+        this.flashTicker.add(() => {
+            this.flashTimer += this.flashTicker!.deltaMS / 1000;
+            
+            if (this.flashTimer >= this.flashInterval) {
+                this.flashTimer = 0;
+                this.flashVisible = !this.flashVisible;
+                flashOutline.alpha = this.flashVisible ? 1 : 0;
+            }
+        });
+        
+        this.flashTicker.start();
+    }
+
+    private cleanup(): void {
+        // Stop flashing ticker
+        if (this.flashTicker) {
+            this.flashTicker.destroy();
+            this.flashTicker = null;
+        }
+        
+        // Remove game over container from stage
+        if (this.gameOverContainer) {
+            this.app.stage.removeChild(this.gameOverContainer);
+            this.gameOverContainer = null;
+        }
+        
+        // Reset stage event handling
+        this.app.stage.eventMode = 'none';
+        this.app.stage.cursor = 'default';
+        this.app.stage.removeAllListeners('pointerdown');
     }
 
     update(): void {

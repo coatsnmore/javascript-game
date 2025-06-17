@@ -118,6 +118,11 @@ export class Scene {
         const playerAlive = this.player.update(this.controls.getState(), this.app.screen.width, this.app.screen.height, this.app.stage, this.world);
         if (!playerAlive) {
             this.paused = true;
+            // Remove player and enemies from stage but keep HUD
+            this.app.stage.removeChild(this.player.getGraphics());
+            this.enemies.forEach(enemy => {
+                this.app.stage.removeChild(enemy.getGraphics());
+            });
             this.hud.restart(this.restart.bind(this));
             return;
         }
@@ -136,9 +141,7 @@ export class Scene {
         console.log(`restarting: ${this}`);
         
         // Clear existing stage
-        if (this.app.stage.children.length > 0) {
-            this.app.stage.removeChildren();
-        }
+        this.app.stage.removeChildren();
 
         // create world and add physics
         this.world = new World(60);
