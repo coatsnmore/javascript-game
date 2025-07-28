@@ -13,11 +13,13 @@ export class Scene {
     private height: number;
     private paused: boolean;
     private app: PIXI.Application;
-    private world: World;
-    private player: Player;
-    private hud: HUD;
+    private world!: World;
+    private player!: Player;
+    private hud!: HUD;
     private enemies: Enemy[] = [];
     private drops: Drop[] = [];
+    private enemySpawnTimer: number = 0;
+    private readonly ENEMY_SPAWN_INTERVAL: number = 10000; // 10 seconds in milliseconds
 
     constructor(domId: string, width: number, height: number) {
         this.controls = new Controls();
@@ -197,6 +199,13 @@ export class Scene {
         // update HUD
         this.hud.update();
 
+        // Enemy spawning logic
+        this.enemySpawnTimer += this.app.ticker.deltaMS;
+        if (this.enemySpawnTimer >= this.ENEMY_SPAWN_INTERVAL) {
+            this.enemySpawnTimer = 0;
+            this.spawnEnemy();
+        }
+
         // Clear collisions after all processing is complete
         this.world.clearCollisions();
     }
@@ -219,10 +228,11 @@ export class Scene {
 
         // create HUD
         this.hud = new HUD(50, 25, 250, this.world, this.player, this.app);
-        this.app.stage.addChild(this.hud.graphics);
+        this.app.stage.addChild(this.hud.getGraphics());
 
         this.enemies = [];
         this.drops = [];
+        this.enemySpawnTimer = 0;
 
         // add new enemy to stage
         const enemy = new Enemy(50, 200, 100, this.world);
@@ -240,7 +250,7 @@ export class Scene {
         this.enemies.push(enemy3);
 
         // add new bodies to world
-        this.world.addBody(this.player.body);
+        this.world.addBody(this.player.getBody());
         this.world.addBody(enemy.body);
         this.world.addBody(enemy2.body);
         this.world.addBody(enemy3.body);
@@ -251,6 +261,15 @@ export class Scene {
     restartScreen(): void {
         this.paused = true;
         this.hud.restart(this.restart.bind(this));
+    }
+
+    private spawnEnemy(): void {
+        const spawnPos = this.getRandomSpawnPosition();
+        const newEnemy = new Enemy(50, spawnPos.x, spawnPos.y, this.world);
+        this.app.stage.addChild(newEnemy.getGraphics());
+        this.world.addBody(newEnemy.body);
+        this.enemies.push(newEnemy);
+        console.log('New enemy spawned at:', spawnPos);
     }
 
     tick(): void {

@@ -279,4 +279,8 @@ export class Player {
     heal(amount: number): void {
         this.health = Math.min(this.MAX_HEALTH, this.health + amount);
     }
+
+    getBody(): p2.Body {
+        return this.body;
+    }
 } 

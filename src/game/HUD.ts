@@ -222,4 +222,8 @@ export class HUD {
     update(): void {
         this.showHealth(this.player.getHealth());
     }
+
+    getGraphics(): PIXI.Container {
+        return this.graphics;
+    }
 } 
