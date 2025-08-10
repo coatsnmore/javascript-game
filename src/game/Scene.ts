@@ -4,6 +4,7 @@ import { Controls } from './Controls';
 import { World } from './World';
 import { HUD } from './HUD';
 import { Drop } from './Drop';
+import { Timer } from './ui/Timer';
 import * as PIXI from 'pixi.js';
 import * as p2 from 'p2';
 
@@ -20,6 +21,7 @@ export class Scene {
     private drops: Drop[] = [];
     private enemySpawnTimer: number = 0;
     private readonly ENEMY_SPAWN_INTERVAL: number = 10000; // 10 seconds in milliseconds
+    private timer!: Timer;
 
     constructor(domId: string, width: number, height: number) {
         this.controls = new Controls();
@@ -187,6 +189,8 @@ export class Scene {
         const playerAlive = this.player.update(this.controls.getState(), this.app.screen.width, this.app.screen.height, this.app.stage, this.world);
         if (!playerAlive) {
             this.paused = true;
+            // Pause timer when game ends
+            this.timer.pause();
             // Remove player and enemies from stage but keep HUD
             this.app.stage.removeChild(this.player.getGraphics());
             this.enemies.forEach(enemy => {
@@ -198,6 +202,9 @@ export class Scene {
 
         // update HUD
         this.hud.update();
+
+        // update timer
+        this.timer.update();
 
         // Enemy spawning logic
         this.enemySpawnTimer += this.app.ticker.deltaMS;
@@ -230,9 +237,14 @@ export class Scene {
         this.hud = new HUD(50, 25, 250, this.world, this.player, this.app);
         this.app.stage.addChild(this.hud.getGraphics());
 
+        // create timer
+        this.timer = new Timer(10, 10);
+        this.app.stage.addChild(this.timer.getGraphics());
+
         this.enemies = [];
         this.drops = [];
         this.enemySpawnTimer = 0;
+        this.timer.reset();
 
         // add new enemy to stage
         const enemy = new Enemy(50, 200, 100, this.world);
